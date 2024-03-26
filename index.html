@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <title>Custom Number Date Validator</title>
+    <script>
+      /**
+       * 指定した input type="number" または input type="date" 要素に対して、カスタムの数値バリデーションまたは日付バリデーションを追加する。
+       * バリデーション結果は、指定したコールバック関数の第一引数に以下のいずれかの文字列で返す。
+       *
+       * - "Valid": 有効な数値
+       * - "Invalid": 無効な数値
+       * - "RangeError": 指定した範囲外の数値
+       * - "Empty": 未入力状態
+       *
+       * 第二引数には、バリデーション結果が "Valid" または "RangeError" の場合に、入力された数値または日付を返す。
+       * それ以外の場合は null を返す。
+       *
+       * @param {HTMLInputElement} target イベントリスナーを追加する対象の input type="number" または input type="date" 要素
+       * @param {Function} callback バリデーション結果を受け取るコールバック関数
+       */
+      const addCustomValidator = (target, callback) => {
+        const validator = (event) => {
+          const getValue = () =>
+            event.target.type === "number"
+              ? event.target.value === ""
+                ? null
+                : Number(event.target.value)
+              : event.target.value === ""
+              ? null
+              : new Date(event.target.value);
+          const getMinValue = () =>
+            event.target.type === "number"
+              ? event.target.min === ""
+                ? Number.MIN_VALUE
+                : Number(event.target.min)
+              : event.target.min === ""
+              ? new Date(1, 0, 1)
+              : new Date(event.target.min);
+          const getMaxValue = () =>
+            event.target.type === "number"
+              ? event.target.max === ""
+                ? Number.MAX_VALUE
+                : Number(event.target.max)
+              : event.target.max === ""
+              ? new Date(9999, 12, 31)
+              : new Date(event.target.max);
+          const value = getValue();
+          const minValue = getMinValue();
+          const maxValue = getMaxValue();
+          if (event.type === "change") {
+            const status =
+              event.target.value !== "" &&
+              (value < minValue || value > maxValue)
+                ? "RangeError"
+                : "Valid";
+            callback(status, value);
+          } else if (event.type === "keyup") {
+            const status =
+              event.target.value !== "" &&
+              (value < minValue || value > maxValue)
+                ? "RangeError"
+                : event.target.value !== ""
+                ? "Valid"
+                : event.target.value === "" && event.target.validity.valid
+                ? "Empty"
+                : "Invalid";
+            callback(status, value);
+          }
+        };
+
+        target.addEventListener("change", validator);
+        target.addEventListener("keyup", validator);
+      };
+    </script>
+  </head>
+  <body>
+    <h1>カスタム日付バリデーション</h1>
+    <!-- min と max は任意。未指定なら下限または上限チェックはしない -->
+    <input type="date" id="dateInput" min="2023-11-01" max="2024-04-01" /><br />
+    <span id="dateOutput"></span><br />
+    <script>
+      // こういう感じで使う
+      addCustomValidator(
+        dateInput,
+        (status, value) =>
+          (dateOutput.innerText = `status: ${status}, value: ${value}`)
+      );
+    </script>
+    <h1>カスタム数値バリデーション</h1>
+    <!-- min と max は任意。未指定なら下限または上限チェックはしない -->
+    <input type="number" id="numberInput" min="-3" max="11" /><br />
+    <span id="numberOutput"></span><br />
+    <script>
+      // こういう感じで使う
+      addCustomValidator(
+        numberInput,
+        (status, value) =>
+          (numberOutput.innerText = `status: ${status}, value: ${value}`)
+      );
+    </script>
+  </body>
+</html>
